@@ -1,0 +1,50 @@
+name: Perform xconf_release on trigger
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # pulls your repo files into the runner
+
+      - name: Run script
+        run: |
+          chmod +x .github/workflows/capture_vulnerabilities_xconf.sh
+          source .github/workflows/capture_vulnerabilities_xconf.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name:  xconf_docker_images
+          path: ${{ github.workspace }}/xconf_docker_images.tar
+
+      - name: Create Jira Ticket with GitHub details
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          RUN_ID=${{ github.run_id }}
+          ARTIFACT_NAME="build-artifact"
+          WORKFLOW_URL="https://github.com/LakshmipriyaPurushan/xconfui/actions/runs/$RUN_ID"
+
+          SUMMARY="XCONF UI Vulnerability Report - $ARTIFACT_NAME"
+          DESCRIPTION="XCONF scan has been triggered. Please find the vulnerability report from:\n$WORKFLOW_URL"
+          curl -X POST \
+              H "Authorization: Bearer $JIRA_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data '{
+                "fields": {
+                  "project": { "key": $PROJECT },
+                  "summary": $SUMMARY,
+                  "description": $DESCRIPTION,
+                  "issuetype": { "name": "Task" }
+                }
+              }' \
+              $JIRA_URL/rest/api/2/issue
+          env:
+            JIRA_URL: ${{ secrets.JIRA_URL }}         # e.g. https://jira.example.com
+            JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}     # PAT or password (if PAT not available)
+            PROJECT: ${{secrets.PROJECT}}
+
+      
