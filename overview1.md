@@ -369,24 +369,139 @@ GET /xconf/swu/stb?eStbMac=AA:BB:CC:DD:EE:FF&model=MODEL_X&env=PROD
 
 ## Configuration Management
 
-### Configuration Hierarchy
-1. **Global Defaults**: System-wide default configurations
-2. **Environment-Specific**: Dev, staging, production overrides
-3. **Model-Specific**: Device model-based configurations
-4. **Device-Specific**: Individual device overrides
+XConf utilizes HOCON (Human-Optimized Config Object Notation) configuration files that provide comprehensive control over all system components. The platform supports three distinct configuration profiles optimized for different operational responsibilities.
 
-### Rule Engine
-- **Conditional Logic**: Support for complex boolean expressions
-- **Priority System**: Higher priority rules override lower priority ones
-- **Percentage Rollouts**: Gradual deployment based on percentages
-- **Temporal Controls**: Time-based activation and expiration
+### Configuration Architecture
 
-### Configuration Types
-- **Firmware Rules**: Control firmware versions and distribution
-- **DCM Formulas**: Device control and log upload policies
-- **RFC Features**: Feature flags and experimental settings
-- **Telemetry Profiles**: Data collection and reporting configurations
-- **Setting Profiles**: General device settings and parameters
+```mermaid
+graph TB
+    subgraph "Configuration Sources"
+        AdminConf[XConf Admin Config<br/>xconfadmin.conf]
+        WebConfigConf[XConf WebConfig Config<br/>xconfwebconfig.conf]
+        UIConf[XConf UI Config<br/>xconfui.conf]
+    end
+    
+    subgraph "Configuration Categories"
+        ServerConfig[Server Configuration<br/>• Port bindings<br/>• Timeouts<br/>• Metrics]
+        ServiceConfig[Service Integration<br/>• SAT Authentication<br/>• External APIs<br/>• Feature toggles]
+        DataConfig[Data Layer<br/>• Cassandra clusters<br/>• Cache settings<br/>• Connection pools]
+        SecurityConfig[Security Settings<br/>• JWT tokens<br/>• TLS certificates<br/>• Authentication]
+    end
+    
+    subgraph "Runtime Environment"
+        EnvVars[Environment Variables<br/>• SAT_CLIENT_ID<br/>• DATABASE_PASSWORD<br/>• SECURITY_TOKEN_KEY]
+        Deployment[Deployment Context<br/>• Development<br/>• Staging<br/>• Production]
+    end
+    
+    AdminConf --> ServerConfig
+    AdminConf --> ServiceConfig
+    AdminConf --> DataConfig
+    AdminConf --> SecurityConfig
+    
+    WebConfigConf --> ServerConfig
+    WebConfigConf --> ServiceConfig  
+    WebConfigConf --> DataConfig
+    
+    UIConf --> ServerConfig
+    UIConf --> ServiceConfig
+    
+    EnvVars --> ServiceConfig
+    EnvVars --> SecurityConfig
+    Deployment --> ServiceConfig
+
+    %% Styling
+    classDef configSource fill:#e3f2fd,stroke:#0277bd,stroke-width:2px,color:#000
+    classDef configCategory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    classDef runtime fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+
+    class AdminConf,WebConfigConf,UIConf configSource
+    class ServerConfig,ServiceConfig,DataConfig,SecurityConfig configCategory
+    class EnvVars,Deployment runtime
+```
+
+### XConf Admin Configuration (`xconfadmin.conf`)
+
+**Primary Responsibilities**: Administrative backend operations, user authentication, and configuration management workflows.
+
+**Key Configuration Areas**:
+- **Service Integration**: Comprehensive external service connections including SAT authentication, Identity Provider (IDP), device services, account management, and tagging systems
+- **Canary Management**: Advanced deployment controls with timezone support, percentage-based rollouts, and partner-specific configurations
+- **Authentication Framework**: JWT-based security with configurable token validation and role-based access control
+- **Cache Strategy**: Multi-level caching with configurable refresh cycles, distributed locking mechanisms, and performance optimization
+- **Database Operations**: Cassandra cluster management with SSL support, connection pooling, and query optimization settings
+- **Tracing & Observability**: OpenTelemetry integration with configurable endpoints and distributed tracing capabilities
+
+**Notable Features**:
+- Supports 20+ external service integrations with individual timeout and retry configurations
+- Configurable canary deployment windows with timezone awareness
+- Advanced distributed locking for concurrent operations
+- Comprehensive audit logging and security token management
+
+### XConf WebConfig Configuration (`xconfwebconfig.conf`)
+
+**Primary Responsibilities**: High-performance device-facing API operations and configuration delivery optimization.
+
+**Key Configuration Areas**:
+- **Performance Optimization**: Enhanced caching strategies with group service integration, cache expiration policies, and connection pooling
+- **Device Integration**: Specialized device service connections with model-specific configurations and validation rules
+- **Feature Toggles**: Granular control over RFC features, firmware penetration metrics, and experimental capabilities
+- **Security Enhancements**: Device-specific authentication, token management for firmware delivery, and protocol-based security controls
+- **Data Processing**: Advanced configuration preprocessing, IP address parsing, and network mask management
+- **Metrics Collection**: Device interaction metrics, model-based request tracking, and performance monitoring
+
+**Notable Features**:
+- Device-optimized caching with 4-hour refresh cycles for group services
+- Security token integration for firmware download protection
+- Advanced IP address processing with IPv4/IPv6 network mask support
+- RFC precooking capabilities for improved response times
+- Model-specific feature enablement for targeted device populations
+
+### XConf UI Configuration (`xconfui.conf`)
+
+**Primary Responsibilities**: Web-based administration interface and proxy service management.
+
+**Key Configuration Areas**:
+- **Proxy Architecture**: Streamlined configuration for backend service integration through XConf Admin API
+- **Web Server Settings**: Port configuration, static asset management, and web root directory specification
+- **Logging Framework**: Structured logging with file-based output and caller information tracking
+- **Development Support**: Simplified configuration for development environments and debugging capabilities
+
+**Notable Features**:
+- Lightweight configuration focused on web interface requirements
+- Automatic proxy routing to XConf Admin backend services
+- Development-friendly logging with detailed caller information
+- Minimal external dependencies for rapid deployment
+
+### Configuration Hierarchy & Management
+
+**Environment Variable Integration**:
+- **SAT_CLIENT_ID/SAT_CLIENT_SECRET**: Service-to-service authentication credentials
+- **DATABASE_USER/DATABASE_PASSWORD**: Cassandra database authentication
+- **SECURITY_TOKEN_KEY**: JWT token signing and validation key
+
+**Configuration Validation**:
+- HOCON format validation with nested object support
+- Environment variable substitution with default fallbacks
+- Service dependency validation and health checking
+- Configuration drift detection and alerting capabilities
+
+**Deployment Patterns**:
+1. **Development**: Local configuration with disabled external services and debug logging
+2. **Staging**: Production-like configuration with test service endpoints and enhanced monitoring
+3. **Production**: Full external service integration with optimized performance settings and security hardening
+
+**Rule Engine & Logic**:
+- **Conditional Configuration**: Complex boolean expressions for environment-specific settings
+- **Priority-Based Evaluation**: Hierarchical configuration override mechanisms
+- **Temporal Controls**: Time-based configuration activation and feature scheduling
+- **Percentage Distribution**: Gradual rollout capabilities with statistical distribution controls
+
+**Configuration Types & Scope**:
+- **Firmware Management**: Version control, download URLs, and deployment strategies
+- **DCM Policies**: Log collection schedules, device behavior parameters, and diagnostic settings
+- **RFC Features**: Feature flag management, A/B testing configurations, and experimental controls
+- **Telemetry Profiles**: Data collection policies, upload schedules, and analytics configurations
+- **Security Policies**: Authentication requirements, token validation rules, and access control matrices
 
 ## Deployment Architecture
 
