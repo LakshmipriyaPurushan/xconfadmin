@@ -14,79 +14,85 @@
 
 ## Overview
 
-XConf is a comprehensive configuration management platform designed for RDK (Reference Design Kit) devices. It provides centralized control over device configurations, firmware updates, telemetry settings, and feature management across large-scale RDK deployments. The system is built with Go and follows a microservices architecture with three main components working together to deliver a complete configuration management solution.
+XConf is an enterprise-grade configuration management platform specifically engineered for RDK (Reference Design Kit) ecosystems, delivering centralized control and orchestration across distributed device deployments. Built on Go microservices architecture, the platform abstracts complex device management operations into a cohesive, scalable solution that addresses the operational challenges of modern connected device infrastructure.
 
-### Key Features
+The platform's **configuration orchestration** capabilities establish a unified control plane that eliminates configuration drift and ensures consistency across heterogeneous device populations. Through intelligent rule-based management and priority-based evaluation systems, XConf enables operators to define sophisticated configuration policies that automatically adapt to device characteristics, environmental conditions, and operational requirements.
 
-XConf provides **centralized configuration management** that serves as a single point of control for all device configurations across large-scale RDK deployments. This unified approach eliminates configuration fragmentation and ensures consistency across thousands of devices in the field.
+**Deployment lifecycle management** forms the cornerstone of XConf's operational model, providing advanced canary deployment strategies, percentage-based rollouts, and cohort-targeted distribution mechanisms. This approach minimizes deployment risk while enabling rapid response to security vulnerabilities and feature requirements across large-scale device populations.
 
-The platform's **firmware management** capabilities enable operators to control firmware distribution and updates with sophisticated canary deployment strategies. This includes percentage-based rollouts, device cohort targeting, and emergency rollback procedures to minimize risk during firmware updates.
+**Observability and data governance** within XConf encompasses comprehensive telemetry orchestration, log aggregation policies, and diagnostic data management frameworks. The platform's data collection strategies enable operators to maintain granular visibility into device performance, user behavior patterns, and operational health while respecting privacy and compliance requirements.
 
-**Telemetry services** within XConf manage comprehensive telemetry profiles and data collection policies, allowing operators to configure what data is collected, how frequently it's gathered, and where it's uploaded. This enables data-driven insights into device performance and user behavior patterns.
+The **dynamic feature control** system implements sophisticated feature flag management with rule-based activation, percentage distribution algorithms, and priority-based evaluation chains. This enables safe feature experimentation, A/B testing scenarios, and gradual feature rollouts with precise targeting and rollback capabilities.
 
-The **Device Control Manager (DCM)** component handles critical device control settings and log upload policies, providing granular control over device behavior, log collection schedules, and diagnostic data management. This ensures proper device operation and facilitates troubleshooting when issues arise.
+**Security architecture** integrates multiple authentication layers including JWT-based API security, role-based access control, and comprehensive audit trails. The platform's security model ensures configuration integrity while enabling flexible operational workflows and integration with enterprise identity management systems.
 
-**Feature management** through the RFC (RDK Feature Control) system allows operators to control feature flags and rules with priority-based evaluation, enabling safe feature rollouts and A/B testing scenarios. Features can be activated for specific device cohorts or gradually rolled out using percentage-based distribution.
+**API-first design** principles ensure comprehensive programmatic access to all platform capabilities, enabling seamless integration with existing operational toolchains, automation systems, and custom workflow implementations. The RESTful API surface provides both administrative and device-facing endpoints optimized for their respective use cases.
 
-Robust **authentication and authorization** mechanisms provide JWT-based security with comprehensive role-based access control, ensuring that only authorized personnel can modify configurations and that all changes are properly audited and tracked.
-
-The system exposes **comprehensive RESTful APIs** for all operations, enabling programmatic access and integration with existing operational tools and workflows. This API-first approach supports automation and custom tooling development.
-
-Built-in **metrics and monitoring** capabilities include Prometheus metrics collection and OpenTelemetry distributed tracing support, providing complete observability into system performance and operational health across all components.
-
-**High availability** is achieved through distributed locking mechanisms and multi-level caching strategies that enable scalable operations across multiple data centers while maintaining data consistency and system reliability.
+**Operational resilience** is achieved through distributed caching strategies, multi-level data replication, and horizontal scaling capabilities that enable deployment across multiple data centers while maintaining sub-second response times and 99.9% availability targets.
 
 ## System Architecture
 
 The XConf system follows a three-tier architecture with clear separation of responsibilities:
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            CLIENT LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────────────┐  │
-│  │ RDK Devices │    │   Web UI    │    │      External APIs              │  │
-│  │             │    │             │    │                                 │  │
-│  └─────────────┘    └─────────────┘    └─────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                │                │                            │
-                │ Config         │ User                       │ Admin
-                │ Requests       │ Interface                  │ Operations
-                ▼                ▼                            ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SERVICE LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────────────┐  │
-│  │ XConf       │    │ XConf UI    │    │      XConf Admin                │  │
-│  │ WebConfig   │    │ Server      │    │      Backend                    │  │
-│  │ Port: 9000  │    │ Port: 8081  │    │      Port: 9001                 │  │
-│  └─────────────┘    └─────────────┘    └─────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                │                │                            │
-                │                │ Proxy Requests             │
-                │                └────────────────────────────┘
-                │                                             │
-                ▼                                             ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            DATA LAYER                                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│            ┌─────────────────┐              ┌─────────────────┐            │
-│            │  Cassandra DB   │              │   Cache Layer   │            │
-│            │   (Primary)     │              │    (Redis)      │            │
-│            └─────────────────┘              └─────────────────┘            │
-└─────────────────────────────────────────────────────────────────────────────┘
-                            │                          │
-                            └─────────┬────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        EXTERNAL SERVICES                                   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐ │
-│ │ SAT Service │ │ IDP Service │ │ Prometheus  │ │   OTEL Collector       │ │
-│ │(Auth Token) │ │ (Identity)  │ │ (Metrics)   │ │    (Tracing)           │ │
-│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        RDK[RDK Devices<br/>Config Requests]
+        WebUI[Web UI<br/>User Interface]
+        ExtAPI[External APIs<br/>Admin Operations]
+    end
+    
+    subgraph "Service Layer"
+        WebConfig[XConf WebConfig<br/>Port: 9000<br/>Device API]
+        UIServer[XConf UI Server<br/>Port: 8081<br/>Web Interface]  
+        Admin[XConf Admin<br/>Port: 9001<br/>Management API]
+    end
+    
+    subgraph "Data Layer"
+        Cassandra[(Cassandra DB<br/>Primary Storage)]
+        Redis[(Redis Cache<br/>High Performance)]
+    end
+    
+    subgraph "External Services"
+        SAT[SAT Service<br/>Auth Tokens]
+        IDP[Identity Provider<br/>User Auth]
+        Prometheus[Prometheus<br/>Metrics]
+        OTEL[OTEL Collector<br/>Tracing]
+    end
+
+    %% Client to Service connections
+    RDK -->|Configuration Queries| WebConfig
+    WebUI -->|User Interface| UIServer
+    ExtAPI -->|Admin Operations| Admin
+    
+    %% Service to Service connections
+    UIServer -->|Proxy Requests| Admin
+    
+    %% Service to Data connections
+    WebConfig --> Cassandra
+    WebConfig --> Redis
+    Admin --> Cassandra
+    Admin --> Redis
+    
+    %% Service to External connections
+    WebConfig --> SAT
+    Admin --> SAT
+    Admin --> IDP
+    WebConfig --> Prometheus
+    Admin --> Prometheus
+    WebConfig --> OTEL
+    Admin --> OTEL
+
+    %% Styling for better contrast on white background
+    classDef clientLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    classDef serviceLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px,color:#000
+    classDef externalLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+
+    class RDK,WebUI,ExtAPI clientLayer
+    class WebConfig,UIServer,Admin serviceLayer
+    class Cassandra,Redis dataLayer
+    class SAT,IDP,Prometheus,OTEL externalLayer
 ```
 
 ### Architecture Principles
