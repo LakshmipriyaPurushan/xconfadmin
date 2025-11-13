@@ -242,85 +242,112 @@ sequenceDiagram
 
 ## Use Cases
 
-```mermaid
-graph LR
-    %% Actors
-    OpsTeam[Operations Team]
-    SupportTeam[Support Team]
-    ProductTeam[Product Team]
-    AnalyticsTeam[Analytics Team]
-    DevOpsTeam[DevOps Team]
-    RDKDevices[RDK Devices]
-    
-    %% XConf System boundary
-    subgraph XConfSystem["XConf Configuration Management Platform"]
-        %% Use Cases
-        UC1[Firmware Management<br/>• Upload firmware configs<br/>• Create deployment rules<br/>• Canary rollout strategy<br/>• Monitor deployment]
-        
-        UC2[DCM Configuration<br/>• Define log upload policies<br/>• Configure device settings<br/>• Create conditional formulas<br/>• Automated log collection]
-        
-        UC3[Feature Flag Control<br/>• Create RFC feature rules<br/>• Percentage-based rollout<br/>• Targeted activation<br/>• A/B testing support]
-        
-        UC4[Telemetry Management<br/>• Define collection profiles<br/>• Configure data schedules<br/>• Target device segments<br/>• Analytics reporting]
-        
-        UC5[Environment Configuration<br/>• Multi-environment rules<br/>• Version management<br/>• Policy enforcement<br/>• Configuration promotion]
-        
-        UC6[Device Configuration<br/>• Request configurations<br/>• Receive updates<br/>• Apply settings<br/>• Report status]
-        
-        UC7[Real-time Monitoring<br/>• Health checks<br/>• Performance metrics<br/>• Deployment tracking<br/>• Issue detection]
-    end
-    
-    %% Actor relationships with use cases
-    OpsTeam --> UC1
-    OpsTeam --> UC7
-    
-    SupportTeam --> UC2
-    SupportTeam --> UC7
-    
-    ProductTeam --> UC3
-    ProductTeam --> UC4
-    
-    AnalyticsTeam --> UC4
-    AnalyticsTeam --> UC7
-    
-    DevOpsTeam --> UC5
-    DevOpsTeam --> UC1
-    DevOpsTeam --> UC7
-    
-    RDKDevices --> UC6
-    UC6 --> UC1
-    UC6 --> UC2
-    UC6 --> UC3
-    UC6 --> UC4
-    UC6 --> UC5
-    
-    %% Styling for better visual hierarchy
-    classDef actor fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
-    classDef usecase fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
-    classDef system fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
-    classDef deviceUsecase fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
-    
-    class OpsTeam,SupportTeam,ProductTeam,AnalyticsTeam,DevOpsTeam,RDKDevices actor
-    class UC1,UC2,UC3,UC4,UC5,UC7 usecase
-    class UC6 deviceUsecase
-    class XConfSystem system
-```
+The XConf platform supports diverse operational scenarios across different organizational roles and responsibilities. Each use case demonstrates the platform's capability to address specific configuration management challenges in RDK device deployments.
 
-### Use Case Descriptions
+### Use Case 1: Firmware Management
+**Primary Actors**: Operations Team, DevOps Team  
+**Supporting Systems**: XConf Admin, XConf WebConfig, Device Fleet
 
-**UC1 - Firmware Management**: Operations teams manage firmware distribution through sophisticated deployment strategies including canary releases, percentage-based rollouts, and emergency rollbacks to ensure secure and controlled firmware updates across device populations.
+**Scenario**: Operations teams need to roll out new firmware versions to thousands of RDK devices while minimizing risk and ensuring system stability during the deployment process.
 
-**UC2 - DCM Configuration**: Support teams configure Device Control Manager settings including log upload policies, device behavior parameters, and diagnostic data collection schedules to maintain operational visibility and enable efficient troubleshooting.
+**Process Flow**:
+1. **Upload Firmware Configuration**: Operations team uploads firmware version metadata including download URLs, checksums, and compatibility information through XConf Admin interface
+2. **Create Deployment Rules**: Define targeting rules based on device models, environments, and partner configurations with conditional logic
+3. **Configure Canary Strategy**: Implement percentage-based rollout starting with 1% of devices, gradually increasing to full deployment
+4. **Monitor Deployment Progress**: Track firmware adoption rates, device health metrics, and rollback triggers through real-time dashboards
+5. **Emergency Response**: Execute rapid rollback procedures if issues are detected during deployment
 
-**UC3 - Feature Flag Control**: Product teams implement feature management through RDK Feature Control (RFC) system, enabling safe feature rollouts, A/B testing, and targeted feature activation based on device characteristics and user segments.
+**Expected Outcomes**: Controlled firmware distribution with minimized risk, comprehensive deployment visibility, and rapid issue resolution capabilities.
 
-**UC4 - Telemetry Management**: Analytics teams define comprehensive telemetry profiles, data collection intervals, and reporting configurations to gather insights into device performance, user behavior, and system health metrics.
+### Use Case 2: Device Control Manager (DCM) Configuration  
+**Primary Actors**: Support Team, Operations Team  
+**Supporting Systems**: XConf Admin, Device Diagnostic Systems
 
-**UC5 - Environment Configuration**: DevOps teams manage configuration consistency across development, staging, and production environments through environment-specific rules, automated policy enforcement, and seamless configuration promotion workflows.
+**Scenario**: Support teams require granular control over device log collection, diagnostic data uploads, and device behavior parameters to facilitate troubleshooting and maintain operational visibility.
 
-**UC6 - Device Configuration**: RDK devices automatically request and receive configuration updates, apply settings based on their characteristics, and report status back to the platform for monitoring and compliance verification.
+**Process Flow**:
+1. **Define Log Upload Policies**: Configure log collection schedules, retention policies, and upload destinations based on device types and support requirements
+2. **Configure Device Settings**: Set device behavior parameters including reboot schedules, diagnostic intervals, and maintenance windows
+3. **Create Conditional Formulas**: Implement rule-based logic for dynamic device control based on device health, network conditions, and operational requirements
+4. **Deploy Settings**: Push DCM configurations to targeted device populations with validation and rollback capabilities
+5. **Monitor Collection**: Track log upload success rates, diagnostic data quality, and device compliance with configured policies
 
-**UC7 - Real-time Monitoring**: Cross-functional teams monitor system health, deployment progress, performance metrics, and operational status through comprehensive dashboards and alerting mechanisms for proactive issue resolution.
+**Expected Outcomes**: Automated log collection, improved troubleshooting capabilities, and enhanced device operational visibility.
+
+### Use Case 3: Feature Flag Control (RFC)
+**Primary Actors**: Product Team, QA Team  
+**Supporting Systems**: XConf Admin, XConf WebConfig, Feature Management System
+
+**Scenario**: Product teams need to implement safe feature rollouts, conduct A/B testing, and manage experimental features across device populations with precise targeting and rollback capabilities.
+
+**Process Flow**:
+1. **Create Feature Control Rules**: Define feature activation conditions based on device characteristics, user segments, and deployment criteria
+2. **Configure Rollout Strategy**: Implement percentage-based feature distribution with gradual increase and statistical validation
+3. **Set Feature Parameters**: Configure feature-specific settings, default values, and behavioral parameters for targeted device groups
+4. **Monitor Feature Performance**: Track feature adoption rates, user engagement metrics, and system performance impact
+5. **Optimize and Scale**: Adjust feature parameters based on performance data and scale successful features to broader device populations
+
+**Expected Outcomes**: Safe feature experimentation, data-driven feature decisions, and controlled feature deployment with rapid iteration capabilities.
+
+### Use Case 4: Telemetry Management
+**Primary Actors**: Analytics Team, Product Team  
+**Supporting Systems**: XConf Admin, Data Collection Infrastructure, Analytics Platform
+
+**Scenario**: Analytics teams require comprehensive telemetry data collection from device populations to support product insights, performance optimization, and business intelligence initiatives.
+
+**Process Flow**:
+1. **Define Collection Profiles**: Configure telemetry metrics, collection intervals, and data schemas based on analytical requirements
+2. **Target Device Segments**: Create targeting rules for different device populations, user segments, and geographical regions
+3. **Configure Upload Schedules**: Set data upload frequencies, bandwidth optimization, and privacy compliance parameters
+4. **Validate Data Quality**: Implement data validation rules, quality checks, and error handling procedures
+5. **Generate Analytics Reports**: Process collected telemetry data for business insights, performance optimization, and product development
+
+**Expected Outcomes**: Comprehensive device insights, data-driven product decisions, and optimized user experience based on telemetry analytics.
+
+### Use Case 5: Environment Configuration Management
+**Primary Actors**: DevOps Team, Infrastructure Team  
+**Supporting Systems**: XConf Admin, CI/CD Pipeline, Environment Management Tools
+
+**Scenario**: DevOps teams need to maintain configuration consistency across development, staging, and production environments while enabling seamless configuration promotion and environment-specific customizations.
+
+**Process Flow**:
+1. **Define Environment Rules**: Create environment-specific configuration rules with inheritance patterns and override capabilities
+2. **Configure Version Management**: Implement configuration versioning with promotion workflows and rollback procedures
+3. **Enforce Policy Compliance**: Set automated policy validation, compliance checks, and approval workflows for configuration changes
+4. **Promote Configurations**: Execute seamless configuration promotion from development through staging to production environments
+5. **Monitor Configuration Drift**: Track configuration differences across environments and implement drift detection and correction
+
+**Expected Outcomes**: Consistent multi-environment configuration management, streamlined deployment workflows, and reduced configuration-related issues.
+
+### Use Case 6: Real-time Device Configuration
+**Primary Actors**: RDK Devices, Automated Systems  
+**Supporting Systems**: XConf WebConfig, Device Management Platform, Network Infrastructure
+
+**Scenario**: RDK devices automatically request and receive configuration updates, apply settings based on their characteristics, and report status back to the platform for monitoring and compliance verification.
+
+**Process Flow**:
+1. **Request Configurations**: Devices periodically query XConf WebConfig for current configuration updates based on device parameters
+2. **Receive Targeted Settings**: Platform delivers device-specific configurations including firmware versions, feature settings, and operational parameters
+3. **Apply Configuration Changes**: Devices validate and apply received configurations with appropriate error handling and rollback capabilities
+4. **Report Status Updates**: Devices provide feedback on configuration application success, system health, and operational status
+5. **Maintain Compliance**: Continuous monitoring ensures devices maintain compliance with current configuration policies
+
+**Expected Outcomes**: Automated device configuration management, real-time compliance monitoring, and seamless configuration distribution across device populations.
+
+### Use Case 7: System Monitoring and Observability  
+**Primary Actors**: Operations Team, Support Team, DevOps Team  
+**Supporting Systems**: Prometheus, OTEL Collector, Monitoring Dashboards, Alert Management
+
+**Scenario**: Cross-functional teams require comprehensive monitoring of system health, deployment progress, performance metrics, and operational status through integrated dashboards and proactive alerting mechanisms.
+
+**Process Flow**:
+1. **Configure Monitoring Infrastructure**: Set up comprehensive metrics collection, distributed tracing, and log aggregation across all system components
+2. **Create Performance Dashboards**: Implement real-time dashboards showing system health, device connectivity, and configuration distribution metrics
+3. **Define Alert Policies**: Configure intelligent alerting for system anomalies, performance degradation, and operational issues
+4. **Track Deployment Progress**: Monitor configuration rollouts, feature adoption rates, and deployment success metrics
+5. **Investigate and Resolve Issues**: Use integrated monitoring data for rapid issue identification, root cause analysis, and resolution tracking
+
+**Expected Outcomes**: Proactive system monitoring, rapid issue detection and resolution, and comprehensive operational visibility across the entire XConf platform.
 
 ## API Overview
 
@@ -492,80 +519,54 @@ XConf's production deployment architecture follows enterprise-grade patterns wit
 
 ```mermaid
 graph TB
-    subgraph "Load Balancer"
-        LB[NGINX/HAProxy<br/>Traffic Distribution]
+    subgraph "Load Balancer Layer"
+        LB[Load Balancer<br/>NGINX/HAProxy]
     end
     
-    subgraph "Application Services"
-        direction TB
-        subgraph "Admin Services"
-            XA1[XConf Admin 1<br/>Port: 9001]
-            XA2[XConf Admin 2<br/>Port: 9001]
-        end
-        subgraph "Device Services" 
-            WC1[WebConfig 1<br/>Port: 9000]
-            WC2[WebConfig 2<br/>Port: 9000]
-        end
-        subgraph "UI Services"
-            UI1[XConf UI 1<br/>Port: 8081]
-            UI2[XConf UI 2<br/>Port: 8081]
-        end
+    subgraph "Service Instances"
+        XA1[XConf Admin<br/>Instance 1]
+        XA2[XConf Admin<br/>Instance 2]
+        WC1[XConf WebConfig<br/>Instance 1]
+        WC2[XConf WebConfig<br/>Instance 2]
+        UI1[XConf UI<br/>Instance 1]
+        UI2[XConf UI<br/>Instance 2]
     end
     
-    subgraph "Data Infrastructure"
-        direction LR
-        subgraph "Primary Storage"
-            C1[(Cassandra 1)]
-            C2[(Cassandra 2)]
-            C3[(Cassandra 3)]
-        end
-        subgraph "Cache Layer"
-            Redis[(Redis Cluster)]
-        end
+    subgraph "Data Layer"
+        C1[(Cassandra<br/>Node 1)]
+        C2[(Cassandra<br/>Node 2)]
+        C3[(Cassandra<br/>Node 3)]
+        Redis[(Redis Cluster)]
     end
     
-    subgraph "External Integration"
-        direction TB
-        Auth[Authentication<br/>• SAT Service<br/>• Identity Provider]
-        Monitoring[Observability<br/>• Prometheus<br/>• OTEL Collector]
+    subgraph "External Services"
+        SAT[SAT Service]
+        IDP[Identity Provider]
+        Prometheus[Prometheus]
+        OTEL[OTEL Collector]
     end
     
-    %% Load Balancer to Services
-    LB -.->|Admin Traffic| XA1
-    LB -.->|Admin Traffic| XA2
-    LB -.->|Device Traffic| WC1
-    LB -.->|Device Traffic| WC2
-    LB -.->|UI Traffic| UI1
-    LB -.->|UI Traffic| UI2
+    LB --> XA1
+    LB --> XA2
+    LB --> WC1
+    LB --> WC2
+    LB --> UI1
+    LB --> UI2
     
-    %% Services to Data
-    XA1 & XA2 -.->|Config Mgmt| C1
-    XA1 & XA2 -.->|Config Mgmt| C2
-    WC1 & WC2 -.->|Device Queries| C1
-    WC1 & WC2 -.->|Device Queries| C3
+    XA1 --> C1
+    XA2 --> C2
+    WC1 --> C1
+    WC2 --> C3
     
-    XA1 & XA2 & WC1 & WC2 -.->|Caching| Redis
+    XA1 --> Redis
+    XA2 --> Redis
+    WC1 --> Redis
+    WC2 --> Redis
     
-    %% External Services
-    XA1 & XA2 & WC1 & WC2 -.->|Security| Auth
-    XA1 & XA2 & WC1 & WC2 & UI1 & UI2 -.->|Metrics & Traces| Monitoring
-
-    %% Styling
-    classDef loadBalancer fill:#e3f2fd,stroke:#0277bd,stroke-width:3px,color:#000
-    classDef adminService fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
-    classDef deviceService fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
-    classDef uiService fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#000
-    classDef database fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
-    classDef cache fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
-    classDef external fill:#fff8e1,stroke:#ff8f00,stroke-width:2px,color:#000
-
-    class LB loadBalancer
-    class XA1,XA2 adminService
-    class WC1,WC2 deviceService
-    class UI1,UI2 uiService
-    class C1,C2,C3 database
-    class Redis cache
-    class Auth,Monitoring external
+    XA1 --> SAT
+    XA2 --> SAT
+    WC1 --> SAT
+    WC2 --> SAT
 ```
 
 The deployment architecture implements a layered approach where the load balancer efficiently distributes incoming traffic across multiple service instances based on request type and current system load. Each service type operates multiple instances to ensure high availability and fault tolerance, with automatic failover mechanisms protecting against individual service failures. The Cassandra cluster provides distributed data storage with automatic replication and sharding capabilities, ensuring data consistency and availability even during node failures. Redis cluster integration delivers high-performance caching across all services, significantly reducing database load and improving response times for frequently accessed configuration data. External services integration encompasses authentication systems for secure access control, comprehensive monitoring infrastructure for operational visibility, and distributed tracing capabilities for performance optimization and troubleshooting support.
