@@ -446,7 +446,7 @@ graph TB
     class EnvVars,Deployment runtime
 ```
 
-### XConf Admin Configuration (`xconfadmin.conf`)
+### XConf Admin Configuration 
 
 **Primary Responsibilities**: Administrative backend operations, user authentication, and configuration management workflows.
 
@@ -464,7 +464,7 @@ graph TB
 - Advanced distributed locking for concurrent operations
 - Comprehensive audit logging and security token management
 
-### XConf WebConfig Configuration (`xconfwebconfig.conf`)
+### XConf WebConfig Configuration 
 
 **Primary Responsibilities**: High-performance device-facing API operations and configuration delivery optimization.
 
@@ -483,7 +483,7 @@ graph TB
 - RFC precooking capabilities for improved response times
 - Model-specific feature enablement for targeted device populations
 
-### XConf UI Configuration (`xconfui.conf`)
+### XConf UI Configuration
 
 **Primary Responsibilities**: Web-based administration interface and proxy service management.
 
@@ -672,5 +672,6 @@ go run *.go -f /etc/xconf/xconfui.conf &
 4. Deploy to staging environment
 5. Run integration tests
 6. Deploy to production with canary rollout
+
 
 This overview provides a comprehensive understanding of the XConf system architecture, components, and operational patterns. For detailed API documentation, refer to the individual API documentation files in each component directory.
