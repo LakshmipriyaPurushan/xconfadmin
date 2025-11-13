@@ -14,21 +14,27 @@
 
 ## Overview
 
-XConf is an enterprise-grade configuration management platform specifically engineered for RDK (Reference Design Kit) ecosystems, delivering centralized control and orchestration across distributed device deployments. Built on Go microservices architecture, the platform abstracts complex device management operations into a cohesive, scalable solution that addresses the operational challenges of modern connected device infrastructure.
+XConf is a comprehensive configuration management platform designed for RDK (Reference Design Kit) devices. It provides centralized control over device configurations, firmware updates, telemetry settings, and feature management across large-scale RDK deployments. The system is built with Go and follows a microservices architecture with three main components working together to deliver a complete configuration management solution.
 
-The platform's **configuration orchestration** capabilities establish a unified control plane that eliminates configuration drift and ensures consistency across heterogeneous device populations. Through intelligent rule-based management and priority-based evaluation systems, XConf enables operators to define sophisticated configuration policies that automatically adapt to device characteristics, environmental conditions, and operational requirements.
+### Key Features
 
-**Deployment lifecycle management** forms the cornerstone of XConf's operational model, providing advanced canary deployment strategies, percentage-based rollouts, and cohort-targeted distribution mechanisms. This approach minimizes deployment risk while enabling rapid response to security vulnerabilities and feature requirements across large-scale device populations.
+- **Centralized Configuration Management**: XConf serves as a single point of control for all device configurations across large-scale RDK deployments. This unified approach eliminates configuration fragmentation and ensures consistency across thousands of devices in the field, providing operators with a comprehensive view of their entire device ecosystem.
 
-**Observability and data governance** within XConf encompasses comprehensive telemetry orchestration, log aggregation policies, and diagnostic data management frameworks. The platform's data collection strategies enable operators to maintain granular visibility into device performance, user behavior patterns, and operational health while respecting privacy and compliance requirements.
+- **Firmware Management**: The platform enables operators to control firmware distribution and updates with sophisticated canary deployment strategies. This includes percentage-based rollouts, device cohort targeting, and emergency rollback procedures to minimize risk during firmware updates while ensuring rapid deployment of security patches and feature enhancements.
 
-The **dynamic feature control** system implements sophisticated feature flag management with rule-based activation, percentage distribution algorithms, and priority-based evaluation chains. This enables safe feature experimentation, A/B testing scenarios, and gradual feature rollouts with precise targeting and rollback capabilities.
+- **Telemetry Services**: XConf manages comprehensive telemetry profiles and data collection policies, allowing operators to configure what data is collected, how frequently it's gathered, and where it's uploaded. This enables data-driven insights into device performance and user behavior patterns while maintaining privacy compliance and optimizing bandwidth usage.
 
-**Security architecture** integrates multiple authentication layers including JWT-based API security, role-based access control, and comprehensive audit trails. The platform's security model ensures configuration integrity while enabling flexible operational workflows and integration with enterprise identity management systems.
+- **Device Control Manager (DCM)**: The DCM component handles critical device control settings and log upload policies, providing granular control over device behavior, log collection schedules, and diagnostic data management. This ensures proper device operation and facilitates troubleshooting when issues arise in production environments.
 
-**API-first design** principles ensure comprehensive programmatic access to all platform capabilities, enabling seamless integration with existing operational toolchains, automation systems, and custom workflow implementations. The RESTful API surface provides both administrative and device-facing endpoints optimized for their respective use cases.
+- **Feature Management (RFC)**: Through the RDK Feature Control system, operators can control feature flags and rules with priority-based evaluation, enabling safe feature rollouts and A/B testing scenarios. Features can be activated for specific device cohorts or gradually rolled out using percentage-based distribution with real-time monitoring and rollback capabilities.
 
-**Operational resilience** is achieved through distributed caching strategies, multi-level data replication, and horizontal scaling capabilities that enable deployment across multiple data centers while maintaining sub-second response times and 99.9% availability targets.
+- **Authentication and Authorization**: Robust security mechanisms provide JWT-based authentication with comprehensive role-based access control, ensuring that only authorized personnel can modify configurations. All changes are properly audited and tracked, maintaining complete operational transparency and compliance requirements.
+
+- **RESTful APIs**: The system exposes comprehensive RESTful APIs for all operations, enabling programmatic access and integration with existing operational tools and workflows. This API-first approach supports automation and custom tooling development while maintaining consistent interface standards across all components.
+
+- **Metrics and Monitoring**: Built-in observability capabilities include Prometheus metrics collection and OpenTelemetry distributed tracing support, providing complete visibility into system performance and operational health across all components. This enables proactive monitoring and rapid issue resolution.
+
+- **High Availability**: The platform achieves operational resilience through distributed locking mechanisms and multi-level caching strategies that enable scalable operations across multiple data centers while maintaining data consistency and system reliability with sub-second response times.
 
 ## System Architecture
 
@@ -158,177 +164,163 @@ graph TB
 
 ### Device Configuration Request Flow
 
-```
-Device Configuration Request Flow
-═══════════════════════════════════
+```mermaid
+sequenceDiagram
+    participant RDK as RDK Device
+    participant WC as XConf WebConfig
+    participant Cache as Cache Layer
+    participant DB as Database
 
-RDK Device          XConf WebConfig          Database          Cache Layer
-     │                        │                   │                  │
-     │ GET /xconf/swu/stb?... │                   │                  │
-     ├───────────────────────▶│                   │                  │
-     │                        │                   │                  │
-     │                        │ Check cache for   │                  │
-     │                        │ device config     │                  │
-     │                        ├──────────────────────────────────────▶│
-     │                        │                   │                  │
-     │                        │◀─ Cache Hit ──────────────────────────┤
-     │                        │   OR              │                  │
-     │                        │◀─ Cache Miss ─────────────────────────┤
-     │                        │                   │                  │
-     │                        │ Query config      │                  │
-     │                        │ rules (if miss)   │                  │
-     │                        ├──────────────────▶│                  │
-     │                        │                   │                  │
-     │                        │ Rules & settings  │                  │
-     │                        │◀──────────────────┤                  │
-     │                        │                   │                  │
-     │                        │ Evaluate rules    │                  │
-     │                        │ Apply security    │                  │
-     │                        │ Generate JSON     │                  │
-     │                        │                   │                  │
-     │                        │ Store computed    │                  │
-     │                        │ config (if miss)  │                  │
-     │                        ├──────────────────────────────────────▶│
-     │                        │                   │                  │
-     │ Configuration Response │                   │                  │
-     │◀───────────────────────┤                   │                  │
-     │                        │                   │                  │
-
-Note: Response includes firmware version, download URL, DCM settings, etc.
-      Device parameters include MAC address, model, environment, etc.
+    RDK->>WC: GET /xconf/swu/stb?eStbMac=...&model=...
+    
+    WC->>Cache: Check cache for device config
+    
+    alt Cache Hit
+        Cache-->>WC: Return cached config
+    else Cache Miss
+        Cache-->>WC: Config not found
+        WC->>DB: Query config rules
+        DB-->>WC: Rules & settings
+        
+        Note over WC: Evaluate rules<br/>Apply security<br/>Generate JSON
+        
+        WC->>Cache: Store computed config
+    end
+    
+    WC-->>RDK: Configuration Response
+    
+    Note over RDK,WC: Response includes firmware version,<br/>download URL, DCM settings, etc.<br/>Device parameters include MAC address,<br/>model, environment, etc.
 ```
 
 ### Administrative Configuration Update Flow
 
-```
-Administrative Configuration Update Flow
-══════════════════════════════════════
+```mermaid
+sequenceDiagram
+    participant Admin as Administrator
+    participant UI as XConf UI
+    participant API as XConf Admin
+    participant DB as Database
+    participant Cache as Cache Layer
 
-Administrator     XConf UI        XConf Admin      Database     Cache Layer
-      │              │               │              │              │
-      │ Update       │               │              │              │
-      │ firmware rule│               │              │              │
-      ├─────────────▶│               │              │              │
-      │              │               │              │              │
-      │              │ POST /xconf   │              │              │
-      │              │ AdminService/ │              │              │
-      │              │ firmwarerule  │              │              │
-      │              ├──────────────▶│              │              │
-      │              │               │              │              │
-      │              │               │ Validate     │              │
-      │              │               │ auth & rule  │              │
-      │              │               │              │              │
-      │              │               │ Store        │              │
-      │              │               │ updated rule │              │
-      │              │               ├─────────────▶│              │
-      │              │               │              │              │
-      │              │               │ Invalidate   │              │
-      │              │               │ cache entries│              │
-      │              │               ├─────────────────────────────▶│
-      │              │               │              │              │
-      │              │ Confirmation  │              │              │
-      │              │ response      │              │              │
-      │              │◀──────────────┤              │              │
-      │              │               │              │              │
-      │ Success      │               │              │              │
-      │ notification │               │              │              │
-      │◀─────────────┤               │              │              │
-      │              │               │              │              │
-
-Note: Next device request will fetch updated configuration from refreshed cache
+    Admin->>UI: Update firmware rule
+    UI->>API: POST /xconfAdminService/firmwarerule
+    
+    Note over API: Validate auth & rule
+    
+    API->>DB: Store updated rule
+    API->>Cache: Invalidate cache entries
+    
+    API-->>UI: Confirmation response
+    UI-->>Admin: Success notification
+    
+    Note over Admin,Cache: Next device request will fetch<br/>updated configuration from refreshed cache
 ```
 
 ### Feature Flag Management Flow
 
-```
-Feature Flag Management Flow
-════════════════════════════
+```mermaid
+sequenceDiagram
+    participant Admin as Administrator
+    participant API as XConf Admin
+    participant RDK as RDK Device
+    participant WC as XConf WebConfig
 
-Administrator     XConf Admin           RDK Device        XConf WebConfig
-      │               │                     │                    │
-      │ Create RFC    │                     │                    │
-      │ feature rule  │                     │                    │
-      ├──────────────▶│                     │                    │
-      │               │                     │                    │
-      │               │ Validate rule       │                    │
-      │               │ conditions &        │                    │
-      │               │ set priority        │                    │
-      │               │                     │                    │
-      │               │                     │ Request feature    │
-      │               │                     │ settings           │
-      │               │                     ├───────────────────▶│
-      │               │                     │                    │
-      │               │                     │                    │ Evaluate RFC
-      │               │                     │                    │ rules by
-      │               │                     │                    │ priority
-      │               │                     │                    │
-      │               │                     │                    │ Apply percentage
-      │               │                     │                    │ based rollout
-      │               │                     │                    │
-      │               │                     │ Feature config     │
-      │               │                     │◀───────────────────┤
-      │               │                     │                    │
-      │               │                     │ Apply settings     │
-      │               │                     │ based on config    │
-      │               │                     │                    │
-
-Flow Summary:
-1. Administrator creates RFC feature rules with conditions and rollout percentages
-2. RDK devices periodically request feature settings from XConf WebConfig
-3. WebConfig evaluates rules by priority and applies percentage-based distribution
-4. Devices receive feature configuration and apply settings accordingly
+    Admin->>API: Create RFC feature rule
+    
+    Note over API: Validate rule conditions<br/>& set priority
+    
+    RDK->>WC: Request feature settings
+    
+    Note over WC: Evaluate RFC rules by priority<br/>Apply percentage-based rollout
+    
+    WC-->>RDK: Feature configuration
+    
+    Note over RDK: Apply settings based on config
+    
+    Note over Admin,RDK: Flow Summary:<br/>1. Administrator creates RFC feature rules with conditions and rollout percentages<br/>2. RDK devices periodically request feature settings from XConf WebConfig<br/>3. WebConfig evaluates rules by priority and applies percentage-based distribution<br/>4. Devices receive feature configuration and apply settings accordingly
 ```
 
 ## Use Cases
 
-### 1. Firmware Management
-**Scenario**: Rolling out new firmware to RDK devices
-- **Actors**: Operations team, RDK devices
-- **Process**: 
-  1. Upload firmware configuration with version and download URLs
-  2. Create firmware rules targeting specific device models/environments
-  3. Configure percentage-based rollout (canary deployment)
-  4. Devices request current firmware version and receive updates
-  5. Monitor rollout progress and device health
+```mermaid
+graph LR
+    %% Actors
+    OpsTeam[Operations Team]
+    SupportTeam[Support Team]
+    ProductTeam[Product Team]
+    AnalyticsTeam[Analytics Team]
+    DevOpsTeam[DevOps Team]
+    RDKDevices[RDK Devices]
+    
+    %% XConf System boundary
+    subgraph XConfSystem["XConf Configuration Management Platform"]
+        %% Use Cases
+        UC1[Firmware Management<br/>• Upload firmware configs<br/>• Create deployment rules<br/>• Canary rollout strategy<br/>• Monitor deployment]
+        
+        UC2[DCM Configuration<br/>• Define log upload policies<br/>• Configure device settings<br/>• Create conditional formulas<br/>• Automated log collection]
+        
+        UC3[Feature Flag Control<br/>• Create RFC feature rules<br/>• Percentage-based rollout<br/>• Targeted activation<br/>• A/B testing support]
+        
+        UC4[Telemetry Management<br/>• Define collection profiles<br/>• Configure data schedules<br/>• Target device segments<br/>• Analytics reporting]
+        
+        UC5[Environment Configuration<br/>• Multi-environment rules<br/>• Version management<br/>• Policy enforcement<br/>• Configuration promotion]
+        
+        UC6[Device Configuration<br/>• Request configurations<br/>• Receive updates<br/>• Apply settings<br/>• Report status]
+        
+        UC7[Real-time Monitoring<br/>• Health checks<br/>• Performance metrics<br/>• Deployment tracking<br/>• Issue detection]
+    end
+    
+    %% Actor relationships with use cases
+    OpsTeam --> UC1
+    OpsTeam --> UC7
+    
+    SupportTeam --> UC2
+    SupportTeam --> UC7
+    
+    ProductTeam --> UC3
+    ProductTeam --> UC4
+    
+    AnalyticsTeam --> UC4
+    AnalyticsTeam --> UC7
+    
+    DevOpsTeam --> UC5
+    DevOpsTeam --> UC1
+    DevOpsTeam --> UC7
+    
+    RDKDevices --> UC6
+    UC6 --> UC1
+    UC6 --> UC2
+    UC6 --> UC3
+    UC6 --> UC4
+    UC6 --> UC5
+    
+    %% Styling for better visual hierarchy
+    classDef actor fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    classDef usecase fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    classDef system fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    classDef deviceUsecase fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
+    
+    class OpsTeam,SupportTeam,ProductTeam,AnalyticsTeam,DevOpsTeam,RDKDevices actor
+    class UC1,UC2,UC3,UC4,UC5,UC7 usecase
+    class UC6 deviceUsecase
+    class XConfSystem system
+```
 
-### 2. Device Configuration Management (DCM)
-**Scenario**: Managing log upload policies and device settings
-- **Actors**: Support team, RDK devices
-- **Process**:
-  1. Define log upload schedules and retention policies
-  2. Configure device settings (reboot schedules, URLs)
-  3. Create DCM formulas with conditional logic
-  4. Devices receive settings based on their characteristics
-  5. Automated log collection based on policies
+### Use Case Descriptions
 
-### 3. Feature Flag Control (RFC)
-**Scenario**: Gradual feature rollout with targeted activation
-- **Actors**: Product team, RDK devices
-- **Process**:
-  1. Create feature control rules with targeting conditions
-  2. Define percentage-based rollout strategy
-  3. Set feature parameters and default values
-  4. Devices query feature settings on startup/periodically
-  5. Features activate based on device match and rollout percentage
+**UC1 - Firmware Management**: Operations teams manage firmware distribution through sophisticated deployment strategies including canary releases, percentage-based rollouts, and emergency rollbacks to ensure secure and controlled firmware updates across device populations.
 
-### 4. Telemetry Configuration
-**Scenario**: Configuring data collection and reporting
-- **Actors**: Analytics team, RDK devices
-- **Process**:
-  1. Define telemetry profiles with metrics and collection intervals
-  2. Create targeting rules for different device segments
-  3. Configure data upload schedules and endpoints
-  4. Devices receive telemetry configuration
-  5. Automated data collection and reporting
+**UC2 - DCM Configuration**: Support teams configure Device Control Manager settings including log upload policies, device behavior parameters, and diagnostic data collection schedules to maintain operational visibility and enable efficient troubleshooting.
 
-### 5. Environment-Specific Configurations
-**Scenario**: Managing different settings across development, staging, and production
-- **Actors**: DevOps team, RDK devices across environments
-- **Process**:
-  1. Define environment-specific configuration rules
-  2. Set different firmware versions, URLs, and policies per environment
-  3. Devices automatically receive appropriate configuration based on environment
-  4. Seamless promotion of configurations across environments
+**UC3 - Feature Flag Control**: Product teams implement feature management through RDK Feature Control (RFC) system, enabling safe feature rollouts, A/B testing, and targeted feature activation based on device characteristics and user segments.
+
+**UC4 - Telemetry Management**: Analytics teams define comprehensive telemetry profiles, data collection intervals, and reporting configurations to gather insights into device performance, user behavior, and system health metrics.
+
+**UC5 - Environment Configuration**: DevOps teams manage configuration consistency across development, staging, and production environments through environment-specific rules, automated policy enforcement, and seamless configuration promotion workflows.
+
+**UC6 - Device Configuration**: RDK devices automatically request and receive configuration updates, apply settings based on their characteristics, and report status back to the platform for monitoring and compliance verification.
+
+**UC7 - Real-time Monitoring**: Cross-functional teams monitor system health, deployment progress, performance metrics, and operational status through comprehensive dashboards and alerting mechanisms for proactive issue resolution.
 
 ## API Overview
 
@@ -400,63 +392,95 @@ GET /xconf/swu/stb?eStbMac=AA:BB:CC:DD:EE:FF&model=MODEL_X&env=PROD
 
 ### Recommended Deployment Pattern
 
+```mermaid
+graph TB
+    subgraph "Load Balancer Layer"
+        LB[Load Balancer<br/>NGINX/HAProxy]
+    end
+    
+    subgraph "Service Instances"
+        XA1[XConf Admin<br/>Instance 1]
+        XA2[XConf Admin<br/>Instance 2]
+        WC1[XConf WebConfig<br/>Instance 1]
+        WC2[XConf WebConfig<br/>Instance 2]
+        UI1[XConf UI<br/>Instance 1]
+        UI2[XConf UI<br/>Instance 2]
+    end
+    
+    subgraph "Data Layer"
+        C1[(Cassandra<br/>Node 1)]
+        C2[(Cassandra<br/>Node 2)]
+        C3[(Cassandra<br/>Node 3)]
+        Redis[(Redis Cluster<br/>Caching)]
+    end
+    
+    subgraph "External Services"
+        SAT[SAT Service<br/>Auth Tokens]
+        IDP[Identity Provider<br/>User Auth]
+        Prometheus[Prometheus<br/>Metrics]
+        OTEL[OTEL Collector<br/>Tracing]
+    end
+    
+    LB --> XA1
+    LB --> XA2
+    LB --> WC1
+    LB --> WC2
+    LB --> UI1
+    LB --> UI2
+    
+    XA1 --> C1
+    XA1 --> C2
+    XA2 --> C1
+    XA2 --> C3
+    WC1 --> C1
+    WC1 --> C2
+    WC2 --> C2
+    WC2 --> C3
+    
+    XA1 --> Redis
+    XA2 --> Redis
+    WC1 --> Redis
+    WC2 --> Redis
+    UI1 --> Redis
+    UI2 --> Redis
+    
+    XA1 --> SAT
+    XA2 --> SAT
+    WC1 --> SAT
+    WC2 --> SAT
+    XA1 --> IDP
+    XA2 --> IDP
+    
+    XA1 --> Prometheus
+    XA2 --> Prometheus
+    WC1 --> Prometheus
+    WC2 --> Prometheus
+    UI1 --> Prometheus
+    UI2 --> Prometheus
+    
+    XA1 --> OTEL
+    XA2 --> OTEL
+    WC1 --> OTEL
+    WC2 --> OTEL
+
+    %% Styling for better contrast on white background
+    classDef lbLayer fill:#e3f2fd,stroke:#0277bd,stroke-width:2px,color:#000
+    classDef serviceLayer fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef externalLayer fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
+
+    class LB lbLayer
+    class XA1,XA2,WC1,WC2,UI1,UI2 serviceLayer
+    class C1,C2,C3,Redis dataLayer
+    class SAT,IDP,Prometheus,OTEL externalLayer
 ```
-Production Deployment Architecture
-═══════════════════════════════════
 
-                    ┌─────────────────────────────────┐
-                    │        Load Balancer            │
-                    │      (NGINX/HAProxy)            │
-                    └─────────────┬───────────────────┘
-                                  │
-                    ┌─────────────┼───────────────────┐
-                    │             │                   │
-                    ▼             ▼                   ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        SERVICE INSTANCES                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
-│  │ XConf Admin │  │ XConf Admin │  │XConf WebConf│  │XConf WebConf│   │
-│  │ Instance 1  │  │ Instance 2  │  │ Instance 1  │  │ Instance 2  │   │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │
-│                                                                         │
-│  ┌─────────────┐  ┌─────────────┐                                     │
-│  │  XConf UI   │  │  XConf UI   │                                     │
-│  │ Instance 1  │  │ Instance 2  │                                     │
-│  └─────────────┘  └─────────────┘                                     │
-└─────────────────────────────────────────────────────────────────────────┘
-                    │             │                   │
-                    │             │                   │
-                    ▼             ▼                   ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          DATA LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│ │ Cassandra   │  │ Cassandra   │  │ Cassandra   │  │  Redis Cluster  │ │
-│ │   Node 1    │  │   Node 2    │  │   Node 3    │  │   (Caching)     │ │
-│ └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      EXTERNAL SERVICES                                 │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│ │ SAT Service │  │ Identity    │  │ Prometheus  │  │ OTEL Collector  │ │
-│ │(Auth Tokens)│  │ Provider    │  │ (Metrics)   │  │   (Tracing)     │ │
-│ └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-
-Deployment Characteristics:
+**Deployment Characteristics:**
 • Load balancer distributes traffic across multiple service instances
 • Each service type runs multiple instances for high availability
 • Cassandra cluster provides distributed data storage with replication
 • Redis cluster handles high-performance caching across all services
 • External services provide authentication, monitoring, and observability
-```
 
 ### Infrastructure Requirements
 - **Compute**: Minimum 2 CPU cores, 4GB RAM per service instance
