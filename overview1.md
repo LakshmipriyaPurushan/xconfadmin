@@ -472,130 +472,103 @@ graph TB
 - Development-friendly logging with detailed caller information
 - Minimal external dependencies for rapid deployment
 
-### Configuration Hierarchy & Management
+### Configuration Management Framework
 
-**Environment Variable Integration**:
-- **SAT_CLIENT_ID/SAT_CLIENT_SECRET**: Service-to-service authentication credentials
-- **DATABASE_USER/DATABASE_PASSWORD**: Cassandra database authentication
-- **SECURITY_TOKEN_KEY**: JWT token signing and validation key
+**Environment Variable Integration**: The platform leverages secure environment variable injection for sensitive configuration parameters including SAT_CLIENT_ID and SAT_CLIENT_SECRET for service-to-service authentication credentials, DATABASE_USER and DATABASE_PASSWORD for Cassandra database authentication, and SECURITY_TOKEN_KEY for JWT token signing and validation operations.
 
-**Configuration Validation**:
-- HOCON format validation with nested object support
-- Environment variable substitution with default fallbacks
-- Service dependency validation and health checking
-- Configuration drift detection and alerting capabilities
+**Configuration Validation & Processing**: XConf implements comprehensive HOCON format validation with nested object support, automatic environment variable substitution with intelligent default fallbacks, proactive service dependency validation and health checking mechanisms, and real-time configuration drift detection with automated alerting capabilities to ensure operational consistency.
 
-**Deployment Patterns**:
-1. **Development**: Local configuration with disabled external services and debug logging
-2. **Staging**: Production-like configuration with test service endpoints and enhanced monitoring
-3. **Production**: Full external service integration with optimized performance settings and security hardening
+**Multi-Environment Deployment Patterns**: The system supports distinct deployment configurations optimized for different operational contexts. Development environments utilize local configuration profiles with disabled external services and enhanced debug logging for rapid development cycles. Staging environments implement production-like configurations with dedicated test service endpoints and comprehensive monitoring integration for pre-production validation. Production deployments feature full external service integration with performance-optimized settings and enterprise-grade security hardening measures.
 
-**Rule Engine & Logic**:
-- **Conditional Configuration**: Complex boolean expressions for environment-specific settings
-- **Priority-Based Evaluation**: Hierarchical configuration override mechanisms
-- **Temporal Controls**: Time-based configuration activation and feature scheduling
-- **Percentage Distribution**: Gradual rollout capabilities with statistical distribution controls
+**Advanced Rule Engine & Logic**: XConf's configuration engine supports sophisticated conditional configuration mechanisms using complex boolean expressions for environment-specific settings, priority-based evaluation systems with hierarchical configuration override capabilities, temporal controls enabling time-based configuration activation and automated feature scheduling, and percentage distribution algorithms providing gradual rollout capabilities with statistical distribution controls for safe deployment practices.
 
-**Configuration Types & Scope**:
-- **Firmware Management**: Version control, download URLs, and deployment strategies
-- **DCM Policies**: Log collection schedules, device behavior parameters, and diagnostic settings
-- **RFC Features**: Feature flag management, A/B testing configurations, and experimental controls
-- **Telemetry Profiles**: Data collection policies, upload schedules, and analytics configurations
-- **Security Policies**: Authentication requirements, token validation rules, and access control matrices
+**Comprehensive Configuration Scope**: The platform manages diverse configuration types including firmware management systems for version control and deployment strategies, DCM policies governing log collection schedules and device behavior parameters, RFC features enabling feature flag management and A/B testing configurations, telemetry profiles defining data collection policies and analytics configurations, and security policies establishing authentication requirements and access control matrices across all system components.
 
 ## Deployment Architecture
+
+XConf's production deployment architecture follows enterprise-grade patterns with multiple layers of redundancy, horizontal scaling capabilities, and comprehensive observability integration. The platform is designed to handle high-throughput device communication while maintaining configuration consistency and operational reliability across distributed environments.
 
 ### Recommended Deployment Pattern
 
 ```mermaid
 graph TB
-    subgraph "Load Balancer Layer"
-        LB[Load Balancer<br/>NGINX/HAProxy]
+    subgraph "Load Balancer"
+        LB[NGINX/HAProxy<br/>Traffic Distribution]
     end
     
-    subgraph "Service Instances"
-        XA1[XConf Admin<br/>Instance 1]
-        XA2[XConf Admin<br/>Instance 2]
-        WC1[XConf WebConfig<br/>Instance 1]
-        WC2[XConf WebConfig<br/>Instance 2]
-        UI1[XConf UI<br/>Instance 1]
-        UI2[XConf UI<br/>Instance 2]
+    subgraph "Application Services"
+        direction TB
+        subgraph "Admin Services"
+            XA1[XConf Admin 1<br/>Port: 9001]
+            XA2[XConf Admin 2<br/>Port: 9001]
+        end
+        subgraph "Device Services" 
+            WC1[WebConfig 1<br/>Port: 9000]
+            WC2[WebConfig 2<br/>Port: 9000]
+        end
+        subgraph "UI Services"
+            UI1[XConf UI 1<br/>Port: 8081]
+            UI2[XConf UI 2<br/>Port: 8081]
+        end
     end
     
-    subgraph "Data Layer"
-        C1[(Cassandra<br/>Node 1)]
-        C2[(Cassandra<br/>Node 2)]
-        C3[(Cassandra<br/>Node 3)]
-        Redis[(Redis Cluster<br/>Caching)]
+    subgraph "Data Infrastructure"
+        direction LR
+        subgraph "Primary Storage"
+            C1[(Cassandra 1)]
+            C2[(Cassandra 2)]
+            C3[(Cassandra 3)]
+        end
+        subgraph "Cache Layer"
+            Redis[(Redis Cluster)]
+        end
     end
     
-    subgraph "External Services"
-        SAT[SAT Service<br/>Auth Tokens]
-        IDP[Identity Provider<br/>User Auth]
-        Prometheus[Prometheus<br/>Metrics]
-        OTEL[OTEL Collector<br/>Tracing]
+    subgraph "External Integration"
+        direction TB
+        Auth[Authentication<br/>• SAT Service<br/>• Identity Provider]
+        Monitoring[Observability<br/>• Prometheus<br/>• OTEL Collector]
     end
     
-    LB --> XA1
-    LB --> XA2
-    LB --> WC1
-    LB --> WC2
-    LB --> UI1
-    LB --> UI2
+    %% Load Balancer to Services
+    LB -.->|Admin Traffic| XA1
+    LB -.->|Admin Traffic| XA2
+    LB -.->|Device Traffic| WC1
+    LB -.->|Device Traffic| WC2
+    LB -.->|UI Traffic| UI1
+    LB -.->|UI Traffic| UI2
     
-    XA1 --> C1
-    XA1 --> C2
-    XA2 --> C1
-    XA2 --> C3
-    WC1 --> C1
-    WC1 --> C2
-    WC2 --> C2
-    WC2 --> C3
+    %% Services to Data
+    XA1 & XA2 -.->|Config Mgmt| C1
+    XA1 & XA2 -.->|Config Mgmt| C2
+    WC1 & WC2 -.->|Device Queries| C1
+    WC1 & WC2 -.->|Device Queries| C3
     
-    XA1 --> Redis
-    XA2 --> Redis
-    WC1 --> Redis
-    WC2 --> Redis
-    UI1 --> Redis
-    UI2 --> Redis
+    XA1 & XA2 & WC1 & WC2 -.->|Caching| Redis
     
-    XA1 --> SAT
-    XA2 --> SAT
-    WC1 --> SAT
-    WC2 --> SAT
-    XA1 --> IDP
-    XA2 --> IDP
-    
-    XA1 --> Prometheus
-    XA2 --> Prometheus
-    WC1 --> Prometheus
-    WC2 --> Prometheus
-    UI1 --> Prometheus
-    UI2 --> Prometheus
-    
-    XA1 --> OTEL
-    XA2 --> OTEL
-    WC1 --> OTEL
-    WC2 --> OTEL
+    %% External Services
+    XA1 & XA2 & WC1 & WC2 -.->|Security| Auth
+    XA1 & XA2 & WC1 & WC2 & UI1 & UI2 -.->|Metrics & Traces| Monitoring
 
-    %% Styling for better contrast on white background
-    classDef lbLayer fill:#e3f2fd,stroke:#0277bd,stroke-width:2px,color:#000
-    classDef serviceLayer fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
-    classDef dataLayer fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
-    classDef externalLayer fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
+    %% Styling
+    classDef loadBalancer fill:#e3f2fd,stroke:#0277bd,stroke-width:3px,color:#000
+    classDef adminService fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    classDef deviceService fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef uiService fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#000
+    classDef database fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef cache fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    classDef external fill:#fff8e1,stroke:#ff8f00,stroke-width:2px,color:#000
 
-    class LB lbLayer
-    class XA1,XA2,WC1,WC2,UI1,UI2 serviceLayer
-    class C1,C2,C3,Redis dataLayer
-    class SAT,IDP,Prometheus,OTEL externalLayer
+    class LB loadBalancer
+    class XA1,XA2 adminService
+    class WC1,WC2 deviceService
+    class UI1,UI2 uiService
+    class C1,C2,C3 database
+    class Redis cache
+    class Auth,Monitoring external
 ```
 
-**Deployment Characteristics:**
-• Load balancer distributes traffic across multiple service instances
-• Each service type runs multiple instances for high availability
-• Cassandra cluster provides distributed data storage with replication
-• Redis cluster handles high-performance caching across all services
-• External services provide authentication, monitoring, and observability
+The deployment architecture implements a layered approach where the load balancer efficiently distributes incoming traffic across multiple service instances based on request type and current system load. Each service type operates multiple instances to ensure high availability and fault tolerance, with automatic failover mechanisms protecting against individual service failures. The Cassandra cluster provides distributed data storage with automatic replication and sharding capabilities, ensuring data consistency and availability even during node failures. Redis cluster integration delivers high-performance caching across all services, significantly reducing database load and improving response times for frequently accessed configuration data. External services integration encompasses authentication systems for secure access control, comprehensive monitoring infrastructure for operational visibility, and distributed tracing capabilities for performance optimization and troubleshooting support.
 
 ### Infrastructure Requirements
 - **Compute**: Minimum 2 CPU cores, 4GB RAM per service instance
